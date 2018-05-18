@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h3>Detecting Location</h3>
+  <label for 'drone0'>Drone1</label>
+  <textarea id = 'drone0'></textarea>
+  <label for 'drone1'>Drone2</label>
+  <textarea id = 'drone1'></textarea>
+  <label for 'drone2'>Drone3</label>
+  <textarea id = 'drone2'></textarea>
+
+ <input type="button" id="button1" onClick="getDronePosition();" value="Get Drone Position" />
+
+  <label for 'lat'>Signal Latitute</label>
+  <textarea id = 'lat'></textarea>
+  <label for 'lng'>Signal Longitude</label>
+  <textarea id = 'lng'></textarea>
+
+  <input type = "button" id = "button2" onClick="submitLatLng();" value="Submit Location"/>
+
+  <br>
+
+  <label for 'distance0'>Distance1</label>
+  <textarea id = 'distance0'></textarea>
+  <label for 'distance1'>Distance2</label>
+  <textarea id = 'distance1'></textarea>
+  <label for 'distance2'>Distance3</label>
+  <textarea id = 'distance2'></textarea>
+
+  <label for 'resultLat'>Calculated Latitude</label>
+  <textarea id = 'resultLat'></textarea>
+  <label for 'resultLng'>Calculated Longitude</label>
+  <textarea id = 'resultLng'></textarea>
+  <div id="map"></div>
+  <script>
+    var map;
+
+    function initMap() {
+      var dongguk = {
+        lat: 37.557758,
+        lng: 127.000775
+      };
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 17,
+        center: dongguk
+      });
+
+    }
+    var counter = 0;
+    var res = new Array();
+    //res[0] = JSON.parse("{\"Lat\":\"37.5580073\",\"Lng\":\"126.9982707\"}");
+    //res[1] = JSON.parse("{\"Lat\":\"37.557942\",\"Lng\":\"127.000872\"}");
+    //res[2] = JSON.parse("{\"Lat\":\"37.557572\",\"Lng\":\"127.002546\"}");
+
+    var myelement = new Array();
+    myelement[0] = document.getElementById('distance0');
+    myelement[1] = document.getElementById('distance1');
+    myelement[2] = document.getElementById('distance2');
+
+    var mydrone = new Array();
+    mydrone[0] = document.getElementById('drone0');
+    mydrone[1] = document.getElementById('drone1');
+    mydrone[2] = document.getElementById('drone2');
+
+    var ret;
+    var virtualLocationlat;
+    var virtualLocationlng;
+
+    function getDronePosition() {
+      if(counter == 3)
+      {
+        alert("Calculate Done");
+        document.getElementById('resultLat').value = virtualLocationlat;
+        document.getElementById('resultLng').value = virtualLocationlng;
+
+        for(var i = 0; i < 3; i++)
+        {
+          //alert(res[i].Lat);
+          //draw polyline
+          var flightPlanCoordinates = [{
+              lat: Number(res[i].Lat),
+              lng: Number(res[i].Lng)
+            },
+            {
+              lat: Number(virtualLocationlat),
+              lng: Number(virtualLocationlng)
+            }
+          ];
+          var flightPath = new google.maps.Polyline({
+            path: flightPlanCoordinates,
+            geodesic: true,
+            strokeColor: '#FF0000',
+            strokeOpacity: 1.0,
+            strokeWeight: 3
+          });
+          flightPath.setMap(map);
+        }
+      }
+
+        var droneposition;
+        var txtFile = new XMLHttpRequest();
+        txtFile.open("GET", "http://106.10.42.172/gisa.txt", true);
+        txtFile.onreadystatechange = function() {
+          if (txtFile.readyState === 4) { // Makes sure the document is ready to parse.
+            if (txtFile.status === 200) { // Makes sure it's found the file.
+              //alert(txtFile.responseText);
+
+              ret = JSON.parse(txtFile.responseText);
+              res.push(ret);
+
+              //ret = res[counter];
+              mydrone[counter].value = "Lat : " + ret.Lat + "\n" + "Lng : " + ret.Lng;
+
+
+              droneposition = new google.maps.LatLng(ret.Lat, ret.Lng);
+              var marker = new google.maps.Marker({
+                position: droneposition,
+                map: map
+              });
+              myelement[counter++].value = calculateDistance(ret.Lat,ret.Lng,virtualLocationlat,virtualLocationlng);
+
+            }
+          }
+        }
+        txtFile.send(null);
+
+    }// end getDronePosition
+
+    function submitLatLng()
+    {
+      virtualLocationlat = document.getElementById('lat').value;
+      virtualLocationlng = document.getElementById('lng').value;
+      alert("Success" + " " + virtualLocationlat + " " + virtualLocationlng);
+    }
+
+
+    function calculateDistance(lat1_, lon1_, lat2_, lon2_)
+       {
+         var R = 6371000; // meter
+         var dLat = (lat2_-lat1_).toRad();
+         var dLon = (lon2_-lon1_).toRad();
+         var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos((lat1_-0.0).toRad()) * Math.cos((lat2_-0.0).toRad()) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            var d = R * c;
+            return d;
+       }
+
+       if (typeof(Number.prototype.toRad) === "undefined") {
+         Number.prototype.toRad = function() {
+           return this * Math.PI / 180;
+         }
+       }
+
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAMCCaZwYArNk4h1DQEXt77LBjknqfyAwY&callback=initMap">
+  </script>
+</body>
+
+</html>
